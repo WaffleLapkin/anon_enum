@@ -1,17 +1,17 @@
 use std::{
-    future::Future,
-    task::{Context, Poll},
-    pin::Pin,
     error::Error,
-    fmt::{self, Display, Formatter}
+    fmt::{self, Display, Formatter},
+    future::Future,
+    pin::Pin,
+    task::{Context, Poll},
 };
 
 use crate::{Either, Never};
 
 impl<L, R> Iterator for Either<L, R>
-    where
-        L: Iterator,
-        R: Iterator<Item = L::Item>,
+where
+    L: Iterator,
+    R: Iterator<Item = L::Item>,
 {
     type Item = L::Item;
 
@@ -25,8 +25,8 @@ impl<L, R> Iterator for Either<L, R>
 
 // Never can't be iterator so we need to special-case that
 impl<L> Iterator for Either<L, Never>
-    where
-        L: Iterator,
+where
+    L: Iterator,
 {
     type Item = L::Item;
 
@@ -89,9 +89,10 @@ impl Display for Never {
 }
 
 impl<L, R> Error for Either<L, R>
-    where
-        L: Error,
-        R: Error,
-{}
+where
+    L: Error,
+    R: Error,
+{
+}
 
 impl Error for Never {}

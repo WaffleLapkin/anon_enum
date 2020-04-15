@@ -88,16 +88,28 @@ macro_rules! ae_pat {
         $crate::Either::Right($crate::Either::Right($crate::Either::Left($p)))
     };
     (:: 3 ($p:pat) ) => {
-        $crate::Either::Right($crate::Either::Right($crate::Either::Right($crate::Either::Right($crate::Either::Left($p)))))
+        $crate::Either::Right($crate::Either::Right($crate::Either::Right(
+            $crate::Either::Right($crate::Either::Left($p)),
+        )))
     };
     (:: 4 ($p:pat) ) => {
-        $crate::Either::Right($crate::Either::Right($crate::Either::Right($crate::Either::Right($crate::Either::Right($crate::Either::Left($p))))))
+        $crate::Either::Right($crate::Either::Right($crate::Either::Right(
+            $crate::Either::Right($crate::Either::Right($crate::Either::Left($p))),
+        )))
     };
     (:: 5 ($p:pat) ) => {
-        $crate::Either::Right($crate::Either::Right($crate::Either::Right($crate::Either::Right($crate::Either::Right($crate::Either::Right($crate::Either::Left($p)))))))
+        $crate::Either::Right($crate::Either::Right($crate::Either::Right(
+            $crate::Either::Right($crate::Either::Right($crate::Either::Right(
+                $crate::Either::Left($p),
+            ))),
+        )))
     };
     (:: 6 ($p:pat) ) => {
-        $crate::Either::Right($crate::Either::Right($crate::Either::Right($crate::Either::Right($crate::Either::Right($crate::Either::Right($crate::Either::Right($crate::Either::Left($p))))))))
+        $crate::Either::Right($crate::Either::Right($crate::Either::Right(
+            $crate::Either::Right($crate::Either::Right($crate::Either::Right(
+                $crate::Either::Right($crate::Either::Left($p)),
+            ))),
+        )))
     };
 
     (never :: 0 ($p:pat) ) => {
@@ -110,28 +122,40 @@ macro_rules! ae_pat {
         $crate::Either::Right($crate::Either::Right($crate::Either::Right($p)))
     };
     (never :: 3 ($p:pat) ) => {
-        $crate::Either::Right($crate::Either::Right($crate::Either::Right($crate::Either::Right($crate::Either::Right($p)))))
+        $crate::Either::Right($crate::Either::Right($crate::Either::Right(
+            $crate::Either::Right($crate::Either::Right($p)),
+        )))
     };
     (never :: 4 ($p:pat) ) => {
-        $crate::Either::Right($crate::Either::Right($crate::Either::Right($crate::Either::Right($crate::Either::Right($crate::Either::Right($p))))))
+        $crate::Either::Right($crate::Either::Right($crate::Either::Right(
+            $crate::Either::Right($crate::Either::Right($crate::Either::Right($p))),
+        )))
     };
     (never :: 5 ($p:pat) ) => {
-        $crate::Either::Right($crate::Either::Right($crate::Either::Right($crate::Either::Right($crate::Either::Right($crate::Either::Right($crate::Either::Right($p)))))))
+        $crate::Either::Right($crate::Either::Right($crate::Either::Right(
+            $crate::Either::Right($crate::Either::Right($crate::Either::Right(
+                $crate::Either::Right($p),
+            ))),
+        )))
     };
     (never :: 6 ($p:pat) ) => {
-        $crate::Either::Right($crate::Either::Right($crate::Either::Right($crate::Either::Right($crate::Either::Right($crate::Either::Right($crate::Either::Right($crate::Either::Right($p))))))))
+        $crate::Either::Right($crate::Either::Right($crate::Either::Right(
+            $crate::Either::Right($crate::Either::Right($crate::Either::Right(
+                $crate::Either::Right($crate::Either::Right($p)),
+            ))),
+        )))
     };
 
     ( $(never)? :: $l:literal) => {
         compile_error!("Only patterns for anonymous enums of size <= 6 are supported by this demo")
-    }
+    };
 }
 
 #[cfg(test)]
 mod tests {
     use std::borrow::Cow;
-    use std::str::FromStr;
     use std::io;
+    use std::str::FromStr;
 
     fn fun(arg: Ae![i32 | i32 | String]) -> String {
         match arg {
@@ -142,48 +166,11 @@ mod tests {
 
     #[test]
     fn it_works() {
-        assert_eq!(
-            fun(ae!(::0(1))),
-            "1"
-        );
+        assert_eq!(fun(ae!(::0(1))), "1");
 
-        assert_eq!(
-            fun(ae!(::1(42))),
-            "42"
-        );
+        assert_eq!(fun(ae!(::1(42))), "42");
 
-        assert_eq!(
-            fun(ae!(::2(String::from("hi")))),
-            "hi"
-        );
-    }
-
-    fn read_file(path: &str) -> io::Result<String> {
-        if path == "./foo" {
-            Ok(String::from("hello"))
-        } else if path == "./bar" {
-            Ok(String::from("1"))
-        } else {
-            Err(io::Error::new(io::ErrorKind::Other, "only \"./foo\" and \"./bar\" paths are permitted"))
-        }
-    }
-
-    fn read<T>(path: &str) -> Result<T, Ae![io::Error | T::Err]>
-    where
-        T: FromStr,
-    {
-        // There are 2 thing you need to note:
-        //   1. We can't use `?` dicerectly, since `A | B` can't implement both `From<A>` and `From<B>` :(
-        //   2. We can use `::0` as a function, just like `Either::Left`, `Enum::Var`
-        let string = read_file(path).map_err(ae![::0])?;
-        T::from_str(&string[..]).map_err(ae![::1])
-    }
-
-    #[test]
-    fn read_test() {
-        assert!(matches!(read::<i32>("./path"), Err(ae_pat![::0(_)])));
-        assert!(matches!(read::<i32>("./foo"), Err(ae_pat![::1(_)])));
-        assert!(matches!(read::<i32>("./bar"), Ok(1)));
+        assert_eq!(fun(ae!(::2(String::from("hi")))), "hi");
     }
 
     #[test]
@@ -212,5 +199,36 @@ mod tests {
         let never: Ae![] = return;
         let never_: i32 = match never {};
         let never_: String = match never {};
+    }
+
+    #[test]
+    fn read_test() {
+        assert!(matches!(read::<i32>("./path"), Err(ae_pat![::0(_)])));
+        assert!(matches!(read::<i32>("./foo"), Err(ae_pat![::1(_)])));
+        assert!(matches!(read::<i32>("./bar"), Ok(1)));
+    }
+
+    fn read<T>(path: &str) -> Result<T, Ae![io::Error | T::Err]>
+    where
+        T: FromStr,
+    {
+        // There are 2 thing you need to note:
+        //   1. We can't use `?` dicerectly, since `A | B` can't implement both `From<A>` and `From<B>` :(
+        //   2. We can use `::0` as a function, just like `Either::Left`, `Enum::Var`
+        let string = read_file(path).map_err(ae![::0])?;
+        T::from_str(&string[..]).map_err(ae![::1])
+    }
+
+    fn read_file(path: &str) -> io::Result<String> {
+        if path == "./foo" {
+            Ok(String::from("hello"))
+        } else if path == "./bar" {
+            Ok(String::from("1"))
+        } else {
+            Err(io::Error::new(
+                io::ErrorKind::Other,
+                "only \"./foo\" and \"./bar\" paths are permitted",
+            ))
+        }
     }
 }
